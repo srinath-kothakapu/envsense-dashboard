@@ -1,6 +1,8 @@
 # EnvSense Dashboard
 
-A real-time **environmental sensor monitoring dashboard** built with React. It visualises temperature, humidity, pressure and CO₂ from multiple sensor nodes, raises threshold alerts, and imports/exports data as CSV, so it can sit on top of embedded projects such as STM32 or Raspberry Pi data loggers.
+EnvSense is a real-time **environmental sensor monitoring dashboard** for following temperature, humidity, pressure and CO₂ across multiple sensor nodes. A shared timeline makes it easy to compare devices, while live readings, rolling statistics and editable thresholds help surface changing conditions as they happen.
+
+The dashboard runs out of the box with a built-in simulator, so it can be explored without sensor hardware or a backend. It can also pause the live stream, load recorded readings from CSV, and export the data for further analysis. The simulator makes this a useful starting point for sensor prototypes and demonstrations; hardware integrations can replace its data source with a WebSocket, MQTT-over-WebSocket or Web Serial connection while reusing the dashboard's charts and alerts.
 
 ## Features
 
