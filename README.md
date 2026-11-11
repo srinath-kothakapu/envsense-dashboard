@@ -150,6 +150,3 @@ The charts, summaries, threshold evaluation, and CSV export can then continue to
 - CSV import supports basic unquoted CSV fields and reports malformed rows; it is not a general-purpose spreadsheet importer.
 - The configured thresholds are for demonstrating the interface, not calibrated environmental limits.
 
-## License
-
-This project is distributed under the MIT License. See [`LICENSE`](LICENSE).
