@@ -1,50 +1,38 @@
 # EnvSense Dashboard
 
-EnvSense is a browser-based dashboard for exploring environmental telemetry from several sensor nodes. It brings temperature, relative humidity, atmospheric pressure, and CO2 readings together in a time-series view, with per-device comparisons, rolling statistics, configurable limits, and readable alerts.
+A browser dashboard for looking at environmental data from several sensor nodes: temperature, humidity, air pressure and CO2 over time. You can compare devices, see rolling statistics, set limits and get alerts.
 
-The application is intentionally self-contained: it starts with a deterministic in-browser sensor simulator, so you can run the complete interface without a microcontroller, database, or API. You can also import a CSV recording, inspect it with the same charts and threshold logic, and export the readings. The simulator makes this a practical UI and data-flow demo; it is not a connection to real environmental sensors.
+It runs completely on its own. A sensor simulator in the browser produces the data (always the same sequence, because it's seeded), so you don't need a microcontroller, a database or an API to try it. You can also import a CSV recording, look at it with the same charts and limit checks, and export readings again. The simulator makes it a UI and data-flow demo; it is not connected to real sensors.
 
-## At a glance
+Short overview:
 
-| | |
-|---|---|
-| Application | React single-page web dashboard |
-| Development server | Vite; local URL is `http://localhost:5173` |
-| Default source | Three deterministic simulated sensor nodes |
-| Available metrics | Temperature (C), relative humidity (%), pressure (hPa), CO2 (ppm) |
-| History | Rolling live window per device; CSV files can be reviewed as a separate source |
-| Tests | Vitest and Testing Library |
+- React single-page app, Vite dev server on `http://localhost:5173`
+- default data: three simulated sensor nodes
+- metrics: temperature (°C), humidity (%), pressure (hPa), CO2 (ppm)
+- rolling live window per device; CSV files can be loaded as a separate source
+- tests with Vitest and Testing Library
 
-## What the dashboard does
+## What it does
 
-- **Streams simulated readings.** Three virtual nodes represent a lab bench, server room, and vehicle cabin. A seeded, mean-reverting random walk produces believable changes and occasional spikes. The live view starts with a short prefilled history and then adds a reading about once per second.
-- **Compares devices over time.** Recharts displays each metric as a timeline with a separate series for each node. A bounded rolling window keeps the live view focused on recent history.
-- **Summarizes current conditions.** Metric cards show the latest reading and rolling minimum, average, and maximum, together with whether a configured range is currently satisfied.
-- **Alerts on transitions.** A notification is emitted when a device's metric enters a high or low threshold breach. Further out-of-range samples do not repeatedly create the same alert; the condition is re-armed when the reading returns to the allowed range.
-- **Lets you adjust thresholds.** The controls update the metric limits used by the cards and alert logic.
-- **Supports recorded data.** Import a CSV file to inspect historical readings and calculate threshold events across the imported samples. You can pause the live stream, clear the alert list, switch back to simulated live data, and export readings in CSV form.
-
-## How data flows
+- **Simulated live data.** Three virtual nodes: a lab bench, a server room and a vehicle cabin. A seeded, mean-reverting random walk gives realistic changes and sometimes a spike. The live view starts with a bit of history already filled in and then adds about one reading per second.
+- **Devices over time.** Recharts draws each metric as a timeline with one line per node. The live view only keeps a limited recent window.
+- **Current state.** Cards show the latest value, the rolling min, average and max, and whether the value is inside the set range.
+- **Alerts when something changes.** An alert fires when a device's metric goes above or below its limit. More out-of-range samples don't create the same alert again; it re-arms once the value is back in range.
+- **Editable limits.** You can change the limits used by the cards and alerts.
+- **Recorded data.** Import a CSV to look at old readings and get the limit events for the whole file. You can pause the live stream, clear the alerts, switch back to live data and export readings as CSV.
 
 ```text
-Seeded browser simulator ─┐
-                          ├──> useTelemetry ───> metric cards
-Imported CSV file ────────┘         │             time-series charts
-                                    └───────────> threshold alerts
-                                                       │
-                                                       └──> alert panel
+seeded browser simulator --+
+                           +--> useTelemetry --> metric cards
+imported CSV file ---------+         |           charts
+                                     +---------> limit alerts --> alert panel
 ```
 
-The simulator is the only live data source in this repository. `useTelemetry` owns the rolling series, pause and source state, and alert history; the user interface renders that state. Sensor-specific decisions and CSV parsing live in small JavaScript modules so they can be tested independently of the React components.
+The simulator is the only live source in this repo. `useTelemetry` holds the rolling series, the pause and source state and the alert history; the UI just renders it. The sensor logic and CSV parsing are in small JavaScript modules so I could test them without the React components.
 
 ## Quick start
 
-### Requirements
-
-- Node.js and npm versions supported by the installed Vite release
-- A modern browser
-
-### Install and run
+You need Node.js and npm (a version the installed Vite supports) and a modern browser.
 
 ```bash
 git clone https://github.com/srinath-kothakapu/envsense-dashboard.git
@@ -53,9 +41,9 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). No account, external data source, database, API service, or hardware is needed. Try importing [`sample-data/sample-readings.csv`](sample-data/sample-readings.csv) to explore the historical-data flow.
+Open [http://localhost:5173](http://localhost:5173). No account, database, API or hardware needed. To try the import, load [`sample-data/sample-readings.csv`](sample-data/sample-readings.csv).
 
-### Test and build
+Tests and build:
 
 ```bash
 npm test
@@ -63,24 +51,22 @@ npm run build
 npm run preview
 ```
 
-`npm test` runs the Vitest suite, including component tests and tests for the sensor, alert, series, and CSV utilities. `npm run build` creates the deployable static site in `dist/`; `npm run preview` serves that built site locally.
+`npm test` runs the Vitest tests (components plus the sensor, alert, series and CSV code). `npm run build` creates the static site in `dist/`, and `npm run preview` serves it locally.
 
-## Importing CSV data
+## CSV import
 
-The parser expects a header row and at least one following data row. Column names are case-insensitive. `timestamp` and at least one metric column are required.
+The file needs a header row and at least one data row. Column names are not case-sensitive. `timestamp` and at least one metric are required.
 
-| Column | Required? | Meaning |
+| Column | Required | Meaning |
 |---|---|---|
-| `timestamp` | Yes | ISO-8601 date/time or a numeric Unix timestamp in milliseconds |
-| `device` | No | Device label; omitted or empty values become `imported` |
-| `temperature` | One or more metrics required | Temperature in C |
-| `humidity` | One or more metrics required | Relative humidity in percent |
-| `pressure` | One or more metrics required | Pressure in hPa |
-| `co2` | One or more metrics required | CO2 concentration in ppm |
+| `timestamp` | yes | ISO date/time or Unix time in milliseconds |
+| `device` | no | device name; empty becomes `imported` |
+| `temperature` | at least one metric | °C |
+| `humidity` | at least one metric | % |
+| `pressure` | at least one metric | hPa |
+| `co2` | at least one metric | ppm |
 
-Each row may include any subset of the four metric columns; blank metric cells are left absent. Rows with invalid timestamps are skipped and reported. A row containing a non-numeric supplied metric is skipped and reported. Parsed readings are ordered by timestamp before they are displayed. The CSV parser uses simple comma-separated fields and does not support quoted values containing commas.
-
-Example:
+A row can have any subset of the four metrics; empty cells are just left out. Rows with a bad timestamp or a non-numeric metric are skipped and reported. The readings are sorted by time before they're shown. The parser only handles simple comma-separated fields, no quoted values with commas inside.
 
 ```csv
 timestamp,device,temperature,humidity,pressure,co2
@@ -88,46 +74,40 @@ timestamp,device,temperature,humidity,pressure,co2
 2026-03-20T10:00:01Z,node-02,24.1,43,,
 ```
 
-Use the sample file as the canonical working example for importing and exporting records.
+The sample file is the best working example for import and export.
 
-## Threshold and alert behavior
+## How the alerts work
 
-Thresholds define a minimum and maximum for each metric. Values above the maximum are high breaches; values below the minimum are low breaches. Missing values are not evaluated. Alert detection keeps the active breach state by device and metric, so one continuous breach produces one entry rather than one message per reading. If the metric returns to its allowed range, a later breach generates a new alert. For an imported file, the same transition rule is applied in timestamp order across that file.
+Each metric has a min and a max. Above the max is a high breach, below the min a low breach, and missing values are ignored. The alert logic remembers which device/metric is currently in breach, so one long breach gives one alert, not one per reading. When the value goes back into range and later breaks the limit again, you get a new alert. For an imported file the same rule runs through the file in time order.
 
-These alerts are a demonstration of configurable monitoring logic. They are not safety alarms and should not be used as a substitute for calibrated instruments, validated operating limits, or a certified alarm system.
+These alerts show how configurable monitoring can work. They are not safety alarms and don't replace calibrated instruments or a certified alarm system.
 
-## Repository layout
+## Folder structure
 
 ```text
 src/
-  App.jsx                    Dashboard composition and source controls
-  hooks/useTelemetry.js      Live/imported state, rolling readings, alert history
+  App.jsx                    layout and source controls
+  hooks/useTelemetry.js      live/imported state, rolling readings, alert history
   components/
-    StatCard.jsx             Latest values, ranges, and status
-    TelemetryChart.jsx       Multi-device time-series chart
-    AlertsPanel.jsx          Recent alert list
-    ThresholdEditor.jsx      Editable metric limits
+    StatCard.jsx             latest values, ranges, status
+    TelemetryChart.jsx       multi-device chart
+    AlertsPanel.jsx          recent alerts
+    ThresholdEditor.jsx      editable limits
   lib/
-    simulator.js             Reproducible virtual sensor nodes
-    alerts.js                Threshold evaluation and edge-triggered events
-    csv.js                   CSV parsing, validation, and export
-    metrics.js               Metric names and units
-    series.js                Time-series utilities
+    simulator.js             reproducible virtual sensor nodes
+    alerts.js                limit checks and alert events
+    csv.js                   CSV parsing, validation, export
+    metrics.js               metric names and units
+    series.js                time-series helpers
 sample-data/
-  sample-readings.csv        Example file for the import feature
+  sample-readings.csv        example file for import
 ```
 
-## Technology
-
-- React 19 and React DOM
-- Vite for development and production builds
-- Recharts for time-series visualizations
-- Vitest, jsdom, and Testing Library for automated tests
-- GitHub Actions for continuous integration
+Built with React 19, Vite, Recharts, Vitest + jsdom + Testing Library, and GitHub Actions for CI.
 
 ## Connecting a real sensor
 
-There is no physical-device integration in the current version. A future adapter can replace the interval-based simulator in `src/hooks/useTelemetry.js` with an input that produces reading objects in the same shape:
+There's no hardware connection yet. A real source could replace the interval-based simulator in `src/hooks/useTelemetry.js`, as long as it produces readings in the same shape:
 
 ```js
 {
@@ -140,13 +120,12 @@ There is no physical-device integration in the current version. A future adapter
 }
 ```
 
-The charts, summaries, threshold evaluation, and CSV export can then continue to consume that shared reading shape. A real integration would need its own transport, reconnection behavior, data validation, and device identity policy; those are not provided here.
+The charts, summaries, limit checks and CSV export would then work unchanged. A real connection would still need its own transport, reconnect handling, validation and device identity, which aren't included here.
 
-## Project status and limitations
+## Limitations
 
-- The bundled source is a deterministic simulator and a sample CSV, not measurements from live sensors.
-- The live series and alert list are held in browser memory; this app does not persist data to a server.
-- There is no backend, user account, access control, device authentication, or remote notification service.
-- CSV import supports basic unquoted CSV fields and reports malformed rows; it is not a general-purpose spreadsheet importer.
-- The configured thresholds are for demonstrating the interface, not calibrated environmental limits.
-
+- The data comes from a seeded simulator and a sample CSV, not from live sensors.
+- The live data and alerts only live in browser memory; nothing is saved on a server.
+- No backend, user accounts, access control, device authentication or remote notifications.
+- The CSV import only handles simple unquoted fields and reports bad rows. It's not a general spreadsheet importer.
+- The default limits are for showing the UI, not calibrated environmental limits.
